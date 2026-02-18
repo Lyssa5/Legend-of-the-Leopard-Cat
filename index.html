@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石虎傳說：AI 智慧巡守隊</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Custom Animations & Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Fredoka+One&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>'), auto;
+        }
+
+        .font-game {
+            font-family: 'Fredoka One', 'Noto Sans TC', cursive;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Cloud Animations */
+        @keyframes cloudMove {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+        .animate-cloud-move { animation: cloudMove 25s linear infinite; }
+        .animate-cloud-move-slow { animation: cloudMove 40s linear infinite; }
+        .animate-cloud-move-fast { animation: cloudMove 15s linear infinite; }
+
+        /* Other Animations */
+        .animate-float-slow { animation: float 6s ease-in-out infinite; }
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .animate-pop { animation: pop 0.3s ease-out; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Cute Stroke Text */
+        .stroke-text {
+            text-shadow: 
+                3px 3px 0px #000, 
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+        }
+        .stroke-text-white {
+            text-shadow: 
+                4px 4px 0px rgba(0,0,0,0.2),
+                2px 2px 0px #fff, 
+                -2px -2px 0px #fff, 
+                2px -2px 0px #fff, 
+                -2px 2px 0px #fff;
+        }
+
+        .radial-dots {
+            background-image: radial-gradient(circle, #000 2px, transparent 2.5px);
+            background-size: 12px 12px;
+            opacity: 0.6;
+        }
+        
+        /* Custom Button Styles */
+        .btn-game {
+            transition: all 0.1s;
+            border-bottom-width: 6px;
+        }
+        .btn-game:active {
+            transform: translateY(6px);
+            border-bottom-width: 0px;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-[#2980B9] via-[#6DD5FA] to-[#FFFFFF] min-h-screen flex flex-col md:flex-row text-gray-800">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute top-10 left-[-150px] animate-cloud-move opacity-80"><i data-lucide="cloud" class="w-20 h-20 text-white fill-white drop-shadow-md"></i></div>
+        <div class="absolute top-24 left-[-100px] animate-cloud-move-slow opacity-60 delay-1000"><i data-lucide="cloud" class="w-16 h-16 text-white fill-white drop-shadow-sm"></i></div>
+        <div class="absolute top-5 left-[-200px] animate-cloud-move-fast opacity-40"><i data-lucide="cloud" class="w-10 h-10 text-white fill-white"></i></div>
+        
+        <div class="absolute top-[20%] left-[30%] animate-bounce opacity-40 text-yellow-400"><i data-lucide="coins" class="w-10 h-10 fill-current"></i></div>
+        <div class="absolute top-[40%] left-[10%] animate-spin-slow opacity-50 text-yellow-300"><i data-lucide="star" class="w-10 h-10 fill-current"></i></div>
+        <div class="absolute top-[60%] right-[15%] animate-bounce opacity-40 text-red-500"><i data-lucide="circle-dot" class="w-8 h-8 fill-current"></i></div>
+        <div class="absolute top-[75%] left-[25%] animate-float-fast opacity-50 text-green-500"><i data-lucide="leaf" class="w-10 h-10 fill-current"></i></div>
+        <div class="absolute top-[85%] right-[30%] animate-spin-slow opacity-40 text-blue-500"><i data-lucide="sparkles" class="w-9 h-9 fill-current"></i></div>
+        <div class="absolute bottom-[20%] left-[15%] animate-float-fast opacity-50 text-pink-400"><i data-lucide="heart" class="w-8 h-8 fill-current"></i></div>
+        <div class="absolute bottom-[30%] right-[10%] animate-bounce opacity-60 text-orange-500"><i data-lucide="flower" class="w-9 h-9 fill-current"></i></div>
+
+        <!-- Ground -->
+        <div class="absolute bottom-0 left-0 w-full h-[15vh] z-0">
+            <div class="absolute bottom-[-20px] left-[-5%] w-[50%] h-[180px] bg-[#2ED573] rounded-t-[150px] border-t-[8px] border-[#26AF61] shadow-lg"></div>
+            <div class="absolute bottom-[-40px] right-[-10%] w-[60%] h-[220px] bg-[#26AF61] rounded-t-[200px] border-t-[8px] border-[#1E8449] shadow-lg"></div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="fixed top-0 left-0 w-full z-50 p-4 pointer-events-none flex justify-between items-start max-w-6xl mx-auto hidden">
+        <div class="flex flex-col gap-2 bg-blue-900/80 p-3 rounded-2xl border-2 border-white pointer-events-auto shadow-lg backdrop-blur-sm">
+            <span class="text-white font-black text-[10px] self-center mb-1">HP / 生命</span>
+            <div id="lives-container" class="flex gap-1 text-[#FF4757]">
+                <!-- Hearts injected via JS -->
+            </div>
+        </div>
+        <div class="bg-blue-900/80 p-2 rounded-2xl border-2 border-white pointer-events-auto min-w-[120px] text-right shadow-lg backdrop-blur-sm relative">
+            <div class="text-yellow-400 font-black text-xs uppercase tracking-tighter leading-tight">Score / 積分</div>
+            <div id="score-display" class="text-white font-black text-3xl">0</div>
+            <div id="score-change" class="absolute top-12 right-2 font-black text-sm animate-bounce hidden text-white stroke-text"></div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <button id="menu-btn" class="md:hidden fixed top-4 left-4 z-50 bg-white p-3 rounded-xl shadow-lg border-2 border-gray-100 hidden" onclick="toggleMenu()">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <!-- BGM Toggle -->
+    <button id="bgm-btn" class="absolute top-4 right-4 z-50 bg-white/80 p-2 rounded-full shadow-lg border-2 border-white hover:scale-110 transition-transform flex items-center gap-2 cursor-pointer group" onclick="toggleBGM()">
+        <div class="bg-blue-100 p-1 rounded-full group-hover:bg-blue-200 transition-colors">
+            <i id="bgm-icon" data-lucide="volume-x" class="text-blue-500 w-5 h-5"></i>
+        </div>
+        <span class="font-black text-xs text-blue-600 hidden md:block">MUSIC</span>
+    </button>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-[#FF4757] border-r-8 border-[#C41E3A] transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:static flex flex-col shadow-2xl hidden">
+        <div class="p-6 bg-[#FF6B81] text-white border-b-4 border-[#C41E3A] relative">
+            <div class="flex items-center gap-4">
+                <div id="sidebar-avatar" class="w-14 h-14 bg-white rounded-2xl p-1 shadow-lg overflow-hidden flex items-center justify-center border-4 border-white">
+                    <!-- Character Avatar -->
+                </div>
+                <div>
+                    <p class="text-[9px] font-black opacity-80 uppercase tracking-widest">Player / 巡守員</p>
+                    <h3 id="sidebar-name" class="font-black text-lg truncate max-w-[140px]">勇者</h3>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="md:hidden absolute top-4 right-4 text-white hover:scale-110"><i data-lucide="x-circle"></i></button>
+        </div>
+        
+        <nav class="flex-1 p-6 space-y-3 overflow-y-auto no-scrollbar">
+             <div class="mb-4">
+                 <p class="text-white font-black text-xs uppercase tracking-widest mb-1">World Map / 關卡地圖</p>
+                 <div class="w-full h-4 bg-black/20 rounded-full overflow-hidden border border-white/30">
+                    <div id="progress-bar" class="h-full bg-yellow-400 transition-all duration-700" style="width: 0%"></div>
+                 </div>
+             </div>
+             <div id="level-list" class="space-y-3">
+                <!-- Levels injected via JS -->
+            </div>
+             <button onclick="giveRandomTip()" class="w-full mt-8 p-4 rounded-xl bg-purple-600 text-white font-black flex flex-col items-center border-b-4 border-purple-800 shadow-lg hover:scale-105 transition-transform active:translate-y-1 active:border-b-0 cursor-pointer">
+                <div class="flex items-center gap-2 text-sm"><i data-lucide="lightbulb" class="text-yellow-300 w-5 h-5 animate-pulse"></i> 隨機冷知識</div>
+                <span class="text-[10px] font-bold opacity-80 uppercase mt-1">Get a Hint!</span>
+            </button>
+        </nav>
+        <div class="p-4 bg-[#B83227] text-center text-white text-[9px] font-black uppercase tracking-wider">
+            陳怡君老師製作 / Created by Lisa Chen
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 relative flex flex-col items-center justify-center p-6 md:p-12 w-full min-h-screen pt-20 md:pt-0">
+        
+        <!-- View: Welcome -->
+        <div id="view-welcome" class="w-full max-w-lg animate-fade-in-up text-center z-10 relative">
+            
+            <!-- Floating Game Elements (Restored) -->
+            <div class="absolute top-20 -left-16 animate-bounce hidden md:block cursor-pointer" onclick="playSound('coin')">
+                <div class="w-16 h-16 bg-yellow-400 rounded-lg border-4 border-black flex items-center justify-center shadow-lg relative overflow-hidden group">
+                    <span class="text-4xl font-black text-orange-700 opacity-50">?</span>
+                    <div class="absolute top-1 left-1 w-2 h-2 bg-white rounded-full"></div>
+                </div>
+            </div>
+            
+            <div class="absolute top-40 -right-12 animate-pulse hidden md:block">
+                <div class="w-12 h-12 flex items-center justify-center"><i data-lucide="ghost" class="text-white/80 w-12 h-12 filter drop-shadow-lg"></i></div>
+            </div>
+
+            <!-- Pipe & Flower (Restored) -->
+            <div class="absolute -bottom-8 -left-24 hidden md:flex flex-col items-center">
+                <div class="absolute -top-8 animate-bounce-in">
+                    <i data-lucide="flower" class="w-10 h-10 text-red-500 fill-current drop-shadow-md animate-pulse"></i>
+                </div>
+                <div class="w-20 h-16 bg-gradient-to-r from-green-500 to-green-400 border-x-4 border-t-4 border-black relative z-10"></div>
+                <div class="w-24 h-12 bg-gradient-to-r from-green-600 to-green-500 border-4 border-black relative z-20 -mb-2"></div>
+            </div>
+            
+            <!-- Flag (Restored) -->
+            <div class="absolute top-[50%] -right-24 hidden md:block">
+                 <div class="relative">
+                    <i data-lucide="flag" class="w-12 h-12 text-green-600 fill-current drop-shadow-lg"></i>
+                    <div class="absolute top-10 left-0 w-1 h-20 bg-gray-700"></div>
+                    <div class="absolute bottom-[-80px] left-[-10px] w-6 h-6 bg-yellow-500 rounded-full border-2 border-black"></div>
+                 </div>
+            </div>
+
+            <!-- Spinning Coin (Restored) -->
+            <div class="absolute -bottom-10 -right-16 hidden md:block animate-spin-slow">
+                <i data-lucide="coins" class="w-16 h-16 text-yellow-400 fill-current drop-shadow-xl"></i>
+            </div>
+
+            <!-- Title Block -->
+            <div class="relative bg-yellow-400 p-8 rounded-xl border-[4px] border-black shadow-[6px_6px_0px_rgba(0,0,0,0.2)] mb-10">
+                <div class="absolute top-2 left-2 w-2 h-2 bg-yellow-200 rounded-full"></div>
+                <div class="absolute top-2 right-2 w-2 h-2 bg-yellow-200 rounded-full"></div>
+                <div class="absolute bottom-2 left-2 w-2 h-2 bg-yellow-200 rounded-full"></div>
+                <div class="absolute bottom-2 right-2 w-2 h-2 bg-yellow-200 rounded-full"></div>
+                
+                <div class="absolute -top-12 -right-12 animate-bounce"><i data-lucide="star" class="w-24 h-24 text-yellow-500 fill-current drop-shadow-xl"></i></div>
+                <div class="absolute -bottom-8 -left-8 animate-float-slow text-[#FF4757]"><i data-lucide="zap" class="w-12 h-12 fill-current"></i></div>
+                
+                <div class="relative inline-block">
+                    <h1 class="text-6xl font-black absolute top-[4px] left-[4px] z-0 text-black/30 italic tracking-tighter">石虎傳說</h1>
+                    <h1 class="text-6xl font-black absolute top-0 left-0 z-10 text-white italic tracking-tighter stroke-text">石虎傳說</h1>
+                    <h1 class="text-6xl font-black relative z-20 bg-clip-text text-transparent bg-gradient-to-b from-[#FF4757] to-[#C41E3A] italic tracking-tighter">石虎傳說</h1>
+                </div>
+                <p class="text-blue-600 font-black text-2xl tracking-[0.2em] mt-2 bg-white/50 px-4 py-1 rounded-full border-2 border-white drop-shadow-sm">
+                    AI 智慧巡守隊<br/>
+                    <span class="text-sm font-bold opacity-80 tracking-widest uppercase italic">AI Smart Ranger Squad</span>
+                </p>
+            </div>
+
+            <!-- Input Form -->
+            <div class="bg-white/90 p-8 rounded-[40px] shadow-2xl border-4 border-white space-y-6 relative z-10">
+                <div class="text-left">
+                  <label class="text-red-500 font-black text-xs mb-2 block ml-2 uppercase tracking-widest">Hero Name / 名字</label>
+                  <input type="text" id="player-name-input" class="w-full p-4 rounded-2xl border-4 border-gray-100 font-bold focus:border-red-400 outline-none transition-all text-xl" placeholder="Your Name...">
+                </div>
+                <div class="text-left">
+                  <label class="text-red-500 font-black text-xs mb-4 block ml-2 uppercase tracking-widest">Choose Hero / 角色選擇</label>
+                  <div id="character-select" class="flex gap-4 overflow-x-auto p-2 no-scrollbar">
+                    <!-- Characters injected here -->
+                  </div>
+                </div>
+                <button onclick="startGame()" class="transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 flex items-center justify-center gap-2 cursor-pointer bg-[#FF4757] text-white border-b-[8px] border-[#C41E3A] w-full py-6 text-3xl uppercase">
+                    <div class="flex items-center justify-center gap-3">
+                        <i data-lucide="play" class="fill-white w-6 h-6"></i> START / 開始
+                    </div>
+                </button>
+            </div>
+            
+            <div class="mt-8 text-white/80 text-sm" style="font-family: cursive; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                陳怡君老師製作
+            </div>
+        </div>
+
+        <!-- View: Pizza Game -->
+        <div id="view-pizza" class="w-full max-w-2xl animate-fade-in text-center hidden">
+            <h2 class="text-4xl font-black text-white drop-shadow-lg mb-8 uppercase italic">AI Hallucination / AI 幻覺</h2>
+            <div class="bg-white rounded-[40px] shadow-[0px_12px_24px_rgba(0,0,0,0.15)] border-[6px] border-white relative z-10 p-10">
+                <div class="aspect-video bg-gradient-to-br from-yellow-100 to-orange-100 rounded-3xl mb-8 flex items-center justify-center text-[120px] shadow-inner border-4 border-white animate-wiggle">🐆🍕</div>
+                <p class="text-2xl font-black text-gray-700 mb-8 leading-tight">
+                    AI 說石虎超愛吃夏威夷披薩！<br/>
+                    <span class="text-red-500 italic text-xl">AI says Leopard Cats love Hawaiian pizza!</span><br/>
+                    <span class="text-gray-400 text-lg mt-2 block font-bold">這是真的嗎？ (Is this true?)</span>
+                </p>
+                <div id="pizza-options" class="grid grid-cols-2 gap-6">
+                    <button onclick="handlePizzaAnswer(false)" class="transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 flex flex-col items-center justify-center gap-2 cursor-pointer bg-[#FF4757] text-white border-b-[8px] border-[#C41E3A] py-6 text-xl">
+                        <span>FALSE / 假</span>
+                        <span class="text-xs opacity-70"> HALLUCINATION! </span>
+                    </button>
+                    <button onclick="handlePizzaAnswer(true)" class="transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 flex flex-col items-center justify-center gap-2 cursor-pointer bg-[#2ED573] text-white border-b-[8px] border-[#26AF61] py-6 text-xl">
+                        <span>TRUE / 真</span>
+                        <span class="text-xs opacity-70"> SOUNDS TASTY! </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Vision Game -->
+        <div id="view-vision" class="w-full max-w-2xl animate-fade-in text-center hidden">
+            <div class="bg-white rounded-[40px] shadow-[0px_12px_24px_rgba(0,0,0,0.15)] border-[6px] border-white relative z-10 p-8 md:p-10">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <i data-lucide="search" class="text-[#2ECC71] w-8 h-8"></i>
+                    <h3 class="font-black text-3xl text-[#2ECC71]">石虎特徵鑑定</h3>
+                </div>
+                <p class="mb-8 text-gray-500 font-bold italic">
+                   公會長：AI 搞混了！請選出「正確」的石虎特徵！<br/>
+                   <span class="text-blue-500 text-sm">Help AI identify the Leopard Cat!</span>
+                </p>
+
+                <!-- Question Card -->
+                <div class="bg-green-50 p-6 rounded-3xl border-4 border-green-200 relative mb-8">
+                     <div class="absolute -top-4 -left-4 bg-[#2ECC71] text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl border-4 border-white shadow-md">
+                        <span id="vision-step-num">1</span>
+                     </div>
+                     <h4 id="vision-title" class="text-xl font-black text-green-800 mb-2">Title</h4>
+                     <p id="vision-q" class="font-bold text-gray-700 text-lg mb-1">Question</p>
+                     <p id="vision-q-en" class="text-sm text-gray-400 font-bold italic">Question EN</p>
+                </div>
+
+                <div id="vision-options" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Options injected -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Hallucination Quiz -->
+        <div id="view-hallucination" class="w-full max-w-2xl animate-fade-in text-center hidden">
+            <div class="bg-white rounded-[40px] shadow-[0px_12px_24px_rgba(0,0,0,0.15)] border-[6px] border-white relative z-10 p-10">
+                <h3 class="font-black text-4xl mb-8 text-[#FFA502] uppercase tracking-tighter italic">Lying Pipe / 謊言水管</h3>
+                <div class="bg-yellow-50 p-8 rounded-3xl mb-10 border-4 border-yellow-200 relative shadow-inner text-left group">
+                    <span class="absolute -top-5 -left-3 bg-[#F1C40F] text-white px-6 py-2 rounded-full text-sm font-black border-2 border-white rotate-[-5deg] shadow-lg">QUESTION</span>
+                    <p id="hallucination-q" class="text-2xl font-black text-gray-800 leading-tight">Question</p>
+                    <p id="hallucination-q-en" class="text-gray-400 font-bold text-sm italic mt-2">Question EN</p>
+                    <button onclick="askAiForProof()" class="absolute -top-4 -right-4 bg-purple-500 text-white p-4 rounded-full border-2 border-white shadow-xl hover:scale-125 transition-transform animate-bounce-slow cursor-pointer">
+                        <i data-lucide="brain" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div id="hallucination-options" class="grid grid-cols-2 gap-6">
+                    <button onclick="handleHallucinationAnswer(true)" class="transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 bg-[#2ED573] text-white border-b-[8px] border-[#26AF61] py-5 text-xl">TRUE / 真</button>
+                    <button onclick="handleHallucinationAnswer(false)" class="transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 bg-[#FF4757] text-white border-b-[8px] border-[#C41E3A] py-5 text-xl">FALSE / 假</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Pledge -->
+        <div id="view-pledge" class="w-full max-w-3xl animate-fade-in text-center hidden">
+            <h2 class="text-4xl font-black text-white drop-shadow-lg mb-8 italic uppercase">The Oath / 守護誓約</h2>
+            <div class="bg-white rounded-[40px] shadow-[0px_12px_24px_rgba(0,0,0,0.15)] border-[6px] border-white relative z-10 p-10">
+                <div id="pledge-list" class="space-y-4 mb-10 text-left">
+                    <!-- Pledges injected -->
+                </div>
+                <div id="pledge-action" class="text-center">
+                    <p class="text-gray-400 text-sm font-bold animate-pulse">Complete all oaths to proceed!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Certificate -->
+        <div id="view-certificate" class="w-full max-w-3xl animate-fade-in-up pb-20 hidden">
+             <div id="certificate-container" class="p-10 rounded-[40px] shadow-2xl relative overflow-hidden border-[12px] transition-all bg-white">
+                <!-- Header -->
+                <div class="text-center mb-8 relative z-10">
+                    <div class="inline-block bg-black/5 px-6 py-2 rounded-full mb-4">
+                        <span id="cert-subtitle" class="text-xs font-black tracking-[0.3em] uppercase opacity-70">Certificate of Achievement</span>
+                    </div>
+                    <h2 id="cert-title-en" class="text-5xl md:text-7xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] mb-2 tracking-tighter uppercase stroke-text">Legendary Gold</h2>
+                    <h3 id="cert-title" class="text-4xl font-black drop-shadow-sm">金色傳說</h3>
+                </div>
+
+                <div class="bg-white/60 backdrop-blur-xl rounded-3xl p-6 border-4 border-white/50 shadow-lg relative z-10 flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 flex flex-col items-center justify-center border-b-2 md:border-b-0 md:border-r-2 border-dashed border-gray-300 pb-6 md:pb-0 md:pr-6">
+                        <div id="cert-avatar-container" class="w-28 h-28 rounded-full border-[6px] flex items-center justify-center overflow-hidden shadow-xl mb-3 relative bg-white">
+                            <!-- Avatar -->
+                        </div>
+                        <h2 id="cert-name" class="text-3xl font-black text-gray-800">Name</h2>
+                        <div class="flex gap-2 mt-4 w-full">
+                            <div class="flex-1 bg-white rounded-xl p-2 text-center border-2 border-gray-100 shadow-sm">
+                                <div class="text-[10px] font-black uppercase text-gray-400">Score</div>
+                                <div id="cert-score" class="text-xl font-black text-gray-800">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div class="bg-yellow-50 rounded-2xl p-4 border-2 border-yellow-100 shadow-inner italic font-bold text-yellow-800 leading-relaxed text-sm relative mb-4">
+                            <i data-lucide="quote" class="w-4 h-4 absolute top-2 left-2 opacity-30"></i>
+                            <p id="cert-blessing" class="px-2">"The stars align..."</p>
+                        </div>
+                        <div class="flex items-center justify-between mt-auto px-2">
+                            <div>
+                                <p class="text-[9px] font-black text-gray-400 uppercase">Date</p>
+                                <p class="text-xs font-bold text-gray-600" id="cert-date">Date</p>
+                            </div>
+                            <div id="cert-badge-display" class="relative group transform hover:scale-110 transition-transform">
+                                <!-- Selected Badge -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Badge Selection -->
+                <div class="mt-6 bg-gray-50/80 backdrop-blur-sm p-4 rounded-3xl border-2 border-white relative z-20">
+                    <h4 class="font-black text-gray-500 text-xs mb-3 flex items-center justify-center gap-2 uppercase tracking-wider">
+                        <i data-lucide="palette" class="w-4 h-4"></i> Select Seal / 選擇你的徽章
+                    </h4>
+                    <div id="badge-grid" class="grid grid-cols-6 gap-2">
+                        <!-- Badges injected -->
+                    </div>
+                </div>
+             </div>
+
+             <div class="flex gap-4 mt-8 justify-center">
+                 <button onclick="downloadCertificate()" class="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl border-b-[6px] border-blue-800 flex items-center justify-center gap-2">
+                     <i data-lucide="download" class="w-5 h-5"></i> Save Certificate
+                 </button>
+                 <button id="dl-audio-btn" onclick="downloadRecordings()" class="flex-1 bg-green-500 text-white font-black py-4 rounded-2xl shadow-xl border-b-[6px] border-green-700 flex items-center justify-center gap-2 hidden">
+                     <i data-lucide="file-audio" class="w-5 h-5"></i> Download MP3s
+                 </button>
+                 <button onclick="resetGame()" class="w-16 bg-gray-200 text-gray-600 rounded-2xl shadow-xl border-b-[6px] border-gray-400 flex items-center justify-center">
+                     <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+                 </button>
+             </div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden animate-fade-in">
+             <div class="bg-white p-8 rounded-[40px] border-4 border-gray-100 text-left shadow-xl max-w-lg w-full relative">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="fb-icon"></div>
+                    <h3 id="fb-title" class="font-black text-2xl">Title</h3>
+                </div>
+                <p id="fb-body" class="font-bold text-gray-600 text-lg mb-8 leading-relaxed">Body</p>
+                <button onclick="closeFeedback()" class="bg-[#3742FA] text-white border-b-[8px] border-[#2831B8] transition-all active:translate-y-[6px] active:border-b-0 active:shadow-none rounded-[30px] font-black tracking-wider shadow-[0px_8px_0px_rgba(0,0,0,0.15)] hover:scale-105 w-full py-5 text-xl uppercase tracking-widest">
+                    Continue / 繼續
+                </button>
+             </div>
+        </div>
+
+        <!-- AI Modal -->
+        <div id="ai-modal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden animate-fade-in">
+            <div class="bg-white w-full max-w-lg rounded-[30px] shadow-2xl overflow-hidden border-[6px] border-purple-200">
+                <div class="bg-purple-600 p-4 flex justify-between items-center border-b-4 border-purple-800">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white p-2 rounded-full"><i data-lucide="brain" class="text-purple-600 w-6 h-6"></i></div>
+                        <span class="text-white font-black text-lg">AI Guild Master</span>
+                    </div>
+                    <button onclick="closeAiModal()" class="text-white/80 hover:text-white"><i data-lucide="x-circle" class="w-7 h-7"></i></button>
+                </div>
+                <div id="ai-content" class="p-8 min-h-[200px] flex flex-col justify-center items-center text-center">
+                    <!-- Content -->
+                </div>
+                <div class="bg-gray-50 p-4 border-t-2 border-gray-100 flex justify-center">
+                    <button onclick="closeAiModal()" class="bg-purple-100 text-purple-700 font-black px-8 py-3 rounded-xl hover:bg-purple-200 transition-colors uppercase tracking-wider text-sm">Got it / 了解</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        // Using reliable DiceBear Pixel Art API
+        const CHARACTERS = [
+            { id: 'mario', img: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Mario&backgroundColor=ffdfbf', emoji: '🔴', color: 'bg-red-500', name: '馬力歐 (Mario)' }, 
+            { id: 'luigi', img: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Luigi&backgroundColor=c0eb75', emoji: '🟢', color: 'bg-green-500', name: 'Q版馬力歐 (Mini Mario)' }, 
+            { id: 'star', img: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Star&backgroundColor=ffef96', emoji: '⭐', color: 'bg-yellow-400', name: '無敵星星 (Star)' }, 
+            { id: 'plant', img: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Piranha&backgroundColor=b2f2bb', emoji: '🌻', color: 'bg-green-600', name: '吞食花 (Piranha)' }, 
+            { id: 'peach', img: 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Peach&backgroundColor=ffc3a0', emoji: '👸', color: 'bg-pink-400', name: '碧姬公主 (Peach)' }
+        ];
+
+        const BADGES = [
+            { id: 'paw', name: '守護貓掌', icon: 'paw-print', color: 'bg-orange-400 text-white', border: 'border-orange-600' },
+            { id: 'star', name: '希望之星', icon: 'star', color: 'bg-yellow-400 text-white', border: 'border-yellow-600' },
+            { id: 'heart', name: '仁愛之心', icon: 'heart', color: 'bg-red-400 text-white', border: 'border-red-600' },
+            { id: 'shield', name: '堅毅之盾', icon: 'shield', color: 'bg-blue-400 text-white', border: 'border-blue-600' },
+            { id: 'leaf', name: '森林之友', icon: 'leaf', color: 'bg-green-400 text-white', border: 'border-green-600' },
+            { id: 'sun', name: '光之太陽', icon: 'sun', color: 'bg-amber-400 text-white', border: 'border-amber-600' },
+            { id: 'zap', name: '行動閃電', icon: 'zap', color: 'bg-purple-400 text-white', border: 'border-purple-600' },
+            { id: 'music', name: '快樂音符', icon: 'music', color: 'bg-pink-400 text-white', border: 'border-pink-600' },
+            { id: 'smile', name: '友善大使', icon: 'smile', color: 'bg-teal-400 text-white', border: 'border-teal-600' },
+            { id: 'crown', name: '榮耀皇冠', icon: 'crown', color: 'bg-indigo-400 text-white', border: 'border-indigo-600' },
+            { id: 'gift', name: '幸運禮物', icon: 'gift', color: 'bg-rose-400 text-white', border: 'border-rose-600' },
+            { id: 'anchor', name: '穩重如山', icon: 'anchor', color: 'bg-cyan-400 text-white', border: 'border-cyan-600' },
+        ];
+
+        const LEVELS = [
+            { id: 'pizza', name: '披薩迷因', nameEn: 'Pizza Meme', color: 'bg-red-500' },
+            { id: 'vision', name: '石虎鑑定', nameEn: 'Identity Check', color: 'bg-green-500' },
+            { id: 'hallucination', name: '謊言水管', nameEn: 'Lying Pipe', color: 'bg-blue-500' },
+            { id: 'pledge', name: '守護誓約', nameEn: 'The Oath', color: 'bg-yellow-500' },
+            { id: 'certificate', name: '領取證書', nameEn: 'Reward', color: 'bg-purple-500' },
+        ];
+
+        const VISION_QUIZ = [
+            {
+                id: 'ears',
+                title: '特徵一：耳後黑底白斑 (Back of Ears)',
+                question: '石虎耳後有一個非常重要的特徵，是什麼？',
+                questionEn: 'What is the special mark behind Leopard Cat\'s ears?',
+                options: [
+                    { id: 'no', text: '與身體一樣的條紋', correct: false, style: 'bg-amber-700 text-white', visual: 'stripes' },
+                    { id: 'yes', text: '明顯的「黑底白斑」', correct: true, style: 'bg-black text-white relative overflow-hidden', visual: 'spot' }
+                ],
+                explanation: '正確！貓科動物中，只有石虎有明顯的「黑底白斑」，家貓是沒有的喔！'
+            },
+            {
+                id: 'face',
+                title: '特徵二：眼窩白色條紋 (Eye Stripes)',
+                question: '仔細看臉部！石虎的額頭花紋是？',
+                questionEn: 'Look at the face! What is the pattern on the forehead?',
+                options: [
+                    { id: 'yes', text: '眼窩內側延伸的白紋', correct: true, style: 'bg-amber-600 text-white', visual: 'stripes' },
+                    { id: 'no', text: '黑色的 M 字紋', correct: false, style: 'bg-gray-400 text-white', visual: 'm' }
+                ],
+                explanation: '沒錯！石虎眼窩內側有延伸到額頭的白色條紋，而家貓通常是 M 字紋。'
+            },
+            {
+                id: 'body',
+                title: '特徵三：錢幣狀斑點 (Coin Spots)',
+                question: '石虎身上的花紋長什麼樣子？',
+                questionEn: 'What do the body patterns look like?',
+                options: [
+                    { id: 'no', text: '長條狀的魚骨紋', correct: false, style: 'bg-gray-500 text-white', visual: 'fishbone' },
+                    { id: 'yes', text: '錢幣大小的圓形斑點', correct: true, style: 'bg-amber-400 text-black', visual: 'dots' }
+                ],
+                explanation: '答對了！石虎身上是「不規則圓形斑點」，因此又被稱為「錢貓」！'
+            }
+        ];
+
+        const OATH_STEPS = [
+            { id: 0, textEn: "Check Facts! AI can be wrong.", textTw: "查核事實！AI 也會犯錯。", sub: "我不盲信" },
+            { id: 1, textEn: "Don't Copy! I can think.", textTw: "我不照抄！我會思考判斷。", sub: "我不照抄" },
+            { id: 2, textEn: "Save Animals! Leopard Cats are my friends.", textTw: "守護動物！石虎是我的朋友。", sub: "守護動物" }
+        ];
+
+        // --- STATE ---
+        let currentStage = 'welcome';
+        let playerName = '';
+        let selectedCharacter = CHARACTERS[0];
+        let score = 0;
+        let lives = 3;
+        let visionStep = 0;
+        let quizIndex = 0;
+        let maxStageReached = 0;
+        let selectedBadge = BADGES[0];
+        let heroBlessing = "";
+        let isBGMPlaying = false;
+        let audioCtx = null;
+        let bgmInterval = null;
+
+        // Recording Data
+        let pledgeData = [
+            { status: 'idle', blob: null, transcript: '' },
+            { status: 'idle', blob: null, transcript: '' },
+            { status: 'idle', blob: null, transcript: '' }
+        ];
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recognition = null;
+        let activeRecordingIndex = null;
+
+        // --- AUDIO ENGINE ---
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            const createOsc = (wave, freq, start, dur, vol = 0.1) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = wave;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(vol, start);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(start);
+                osc.stop(start + dur);
+            };
+
+            if (type === 'coin') {
+                createOsc('square', 987.77, now, 0.1); 
+                createOsc('square', 1318.51, now + 0.1, 0.4); 
+            } else if (type === 'bump') {
+                createOsc('sawtooth', 150, now, 0.3, 0.2);
+            } else if (type === 'fanfare') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => createOsc('triangle', f, now + i * 0.1, 0.4, 0.1));
+            } else if (type === 'click') {
+                createOsc('sine', 800, now, 0.05, 0.05);
+            } else if (type === 'correct') {
+                createOsc('sine', 523.25, now, 0.15, 0.1); 
+                createOsc('sine', 659.25, now + 0.1, 0.15, 0.1);
+                createOsc('sine', 783.99, now + 0.2, 0.4, 0.1);
+            } else if (type === 'wrong') {
+                createOsc('sawtooth', 300, now, 0.2, 0.1);
+                createOsc('sawtooth', 200, now + 0.15, 0.4, 0.1);
+            } else if (type === 'woosh') {
+                const bufferSize = audioCtx.sampleRate * 0.5;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                noise.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start(now);
+            } else if (type === 'victory') {
+                // Victory Fanfare - Upward arpeggio (C Major)
+                const C4 = 261.63; const E4 = 329.63; const G4 = 392.00;
+                const C5 = 523.25; const E5 = 659.25; const G5 = 783.99; const C6 = 1046.50;
+
+                // Rapid triplet run
+                createOsc('square', C4, now, 0.08, 0.1);
+                createOsc('square', E4, now+0.08, 0.08, 0.1);
+                createOsc('square', G4, now+0.16, 0.08, 0.1);
+                
+                // Melody
+                createOsc('square', C5, now+0.25, 0.2, 0.15);
+                createOsc('square', E5, now+0.45, 0.2, 0.15);
+                createOsc('square', G5, now+0.65, 0.4, 0.15);
+                createOsc('triangle', C6, now+1.05, 1.5, 0.1); // Long final note
+            }
+        }
+
+        function toggleBGM() {
+            initAudio();
+            isBGMPlaying = !isBGMPlaying;
+            const icon = document.getElementById('bgm-icon');
+            if (isBGMPlaying) {
+                icon.setAttribute('data-lucide', 'volume-2');
+                icon.classList.remove('text-gray-400');
+                icon.classList.add('text-green-600');
+                startBGM();
+            } else {
+                icon.setAttribute('data-lucide', 'volume-x');
+                icon.classList.add('text-gray-400');
+                icon.classList.remove('text-green-600');
+                stopBGM();
+            }
+            lucide.createIcons();
+        }
+
+        function startBGM() {
+            stopBGM();
+            let nextNoteTime = audioCtx.currentTime + 0.1;
+            let noteIndex = 0;
+            
+            // Adventure Theme (C Major) - Upbeat
+            const C5 = 523.25; const E5 = 659.25; const G5 = 783.99; const G4 = 392.00;
+            const A4 = 440.00; const B4 = 493.88;
+            
+            // Intro: E5 E5 E5 C5 E5 G5 G4
+            const introMelody = [E5, E5, E5, C5, E5, G5, G4];
+            const introRhythm = [0.15, 0.3, 0.3, 0.15, 0.3, 0.6, 0.6];
+
+            // Loop
+            const loopMelody = [C5, G4, 329.63, A4, B4, 466.16, A4];
+            const loopRhythm = [0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.45];
+
+            const melody = [...introMelody, ...loopMelody];
+            const rhythm = [...introRhythm, ...loopRhythm];
+
+            const schedule = () => {
+                if (!isBGMPlaying) return;
+                while (nextNoteTime < audioCtx.currentTime + 0.5) {
+                    const freq = melody[noteIndex];
+                    const dur = rhythm[noteIndex] * 0.8;
+                    
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, nextNoteTime);
+                    gain.gain.setValueAtTime(0.015, nextNoteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + dur);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(nextNoteTime);
+                    osc.stop(nextNoteTime + dur);
+
+                    nextNoteTime += rhythm[noteIndex];
+                    noteIndex++;
+                    if (noteIndex >= melody.length) noteIndex = introMelody.length; // Loop from loop part
+                }
+                bgmInterval = requestAnimationFrame(schedule);
+            };
+            schedule();
+        }
+
+        function stopBGM() {
+            if (bgmInterval) cancelAnimationFrame(bgmInterval);
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Detect language for correct voice
+                if (/^[A-Za-z0-9\s!.,?'"]+$/.test(text)) {
+                     utterance.lang = 'en-US';
+                } else {
+                     utterance.lang = 'zh-TW';
+                }
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- GEMINI API (SIMULATED) ---
+        // Hoisted function to ensure global availability
+        async function callGemini(prompt) {
+            if (prompt.includes("完成宣誓")) {
+                // Return English blessing for TTS
+                return "Great job, Ranger! You have shown wisdom and courage. The forest is safe with you!";
+            }
+            return "Simulated Response";
+        }
+
+        const getSimulatedResponse = (prompt) => {
+             if (prompt.includes("帶回家養")) return "🚫 **不可以！**\n石虎是野生動物，不是寵物。";
+             if (prompt.includes("鮪魚罐頭")) return "🐟 **千萬別餵！**\n人類食物太鹹，會害死石虎。";
+             if (prompt.includes("受傷")) return "🚑 **正確！**\n請撥打 1999 或聯絡野生動物急救站。";
+             return "這是模擬回應。";
+        };
+
+        // --- DOM MANIPULATION ---
+        function getCharacterHtml(c) {
+            const isSelected = selectedCharacter.id === c.id;
+            const borderClass = isSelected ? 'border-yellow-400 scale-110 shadow-[0_0_20px_rgba(241,196,15,0.6)] rotate-3' : 'border-gray-100 opacity-50 hover:opacity-100';
+            
+            return `
+                <button onclick="selectCharacter('${c.id}')" class="w-20 h-20 flex-shrink-0 rounded-3xl border-[6px] p-1 bg-white transition-all transform ${borderClass}">
+                    <div class="w-full h-full flex items-center justify-center ${c.color} rounded-xl relative overflow-hidden">
+                        <span class="text-4xl filter drop-shadow-md absolute">${c.emoji}</span>
+                        <img src="${c.img}" alt="${c.name}" class="w-full h-full object-contain relative z-10" onerror="this.style.display='none'">
+                    </div>
+                </button>
+            `;
+        }
+        
+        function renderCharacterSelect() {
+            const container = document.getElementById('character-select');
+            container.innerHTML = CHARACTERS.map(c => getCharacterHtml(c)).join('');
+        }
+
+        function selectCharacter(id) {
+            playSound('click');
+            selectedCharacter = CHARACTERS.find(c => c.id === id);
+            renderCharacterSelect();
+        }
+
+        function renderLevels() {
+            const container = document.getElementById('level-list');
+            container.innerHTML = LEVELS.map((lvl, idx) => {
+                const isUnlocked = idx <= maxStageReached;
+                const isActive = currentStage === lvl.id;
+                const colorClass = isActive ? 'bg-yellow-400 border-white text-black translate-y-0 shadow-[0_0_15px_rgba(255,255,0,0.6)]' :
+                                   isUnlocked ? 'bg-white border-black/10 text-gray-800 hover:bg-gray-50' :
+                                   'bg-black/20 border-transparent text-white/50 cursor-not-allowed';
+                
+                return `
+                <button ${isUnlocked ? `onclick="goToStage('${lvl.id}')"` : ''} class="w-full relative group transition-all duration-300 ${isActive ? 'scale-105' : 'hover:scale-105'}">
+                    <div class="absolute inset-0 rounded-xl translate-y-1 ${isActive ? 'bg-black/40' : 'bg-black/20'}"></div>
+                    <div class="relative p-3 rounded-xl border-4 flex items-center gap-3 text-left transition-transform active:translate-y-1 ${colorClass}">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg border-2 ${isActive ? 'bg-white border-black text-black' : isUnlocked ? `${lvl.color} border-white text-white` : 'bg-black/30 border-white/10'}">
+                            ${isUnlocked ? (idx + 1) : '<i data-lucide="lock" class="w-4 h-4"></i>'}
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-sm leading-tight ${isActive ? 'text-black' : ''}">${lvl.name}</p>
+                            <span class="text-[10px] opacity-70 font-bold uppercase">${lvl.nameEn}</span>
+                        </div>
+                        ${isActive ? '<i data-lucide="chevron-right" class="animate-pulse w-5 h-5"></i>' : ''}
+                    </div>
+                </button>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerText = score;
+            const hearts = Array(3).fill(0).map((_, i) => 
+                `<i data-lucide="heart" class="w-5 h-5 ${i < lives ? 'fill-[#FF4757] text-[#FF4757]' : 'fill-[#444] text-gray-600'}"></i>`
+            ).join('');
+            document.getElementById('lives-container').innerHTML = hearts;
+            lucide.createIcons();
+        }
+
+        function updateSidebar() {
+             document.getElementById('sidebar-name').innerText = playerName || '勇者';
+             document.getElementById('sidebar-avatar').innerHTML = `
+                <div class="w-full h-full flex items-center justify-center ${selectedCharacter.color} rounded-xl relative overflow-hidden">
+                    <span class="text-4xl filter drop-shadow-md absolute">${selectedCharacter.emoji}</span>
+                    <img src="${selectedCharacter.img}" alt="${selectedCharacter.name}" class="w-full h-full object-contain relative z-10" onerror="this.style.display='none'">
+                </div>
+             `;
+        }
+
+        function showView(viewId) {
+            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            if (currentStage !== 'welcome') {
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('hud').classList.remove('hidden');
+                document.getElementById('menu-btn').classList.remove('hidden');
+                updateSidebar();
+                const progress = (LEVELS.findIndex(l => l.id === currentStage) / (LEVELS.length - 1)) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+            } else {
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('menu-btn').classList.add('hidden');
+            }
+            renderLevels();
+        }
+
+        function startGame() {
+            playSound('click');
+            const nameInput = document.getElementById('player-name-input');
+            if (nameInput.value.trim()) {
+                playerName = nameInput.value;
+                playSound('fanfare');
+                goToStage('pizza');
+            } else {
+                nameInput.focus();
+                nameInput.classList.add('animate-pulse');
+                setTimeout(() => nameInput.classList.remove('animate-pulse'), 500);
+            }
+        }
+
+        function goToStage(stageId) {
+            playSound('woosh');
+            currentStage = stageId;
+            const idx = LEVELS.findIndex(l => l.id === stageId);
+            if (idx > maxStageReached) maxStageReached = idx;
+
+            showView(`view-${stageId}`);
+            
+            if (stageId === 'vision') renderVisionQuiz();
+            else if (stageId === 'hallucination') renderHallucinationQuiz();
+            else if (stageId === 'pledge') renderPledge();
+            else if (stageId === 'certificate') renderCertificate();
+        }
+
+        function toggleMenu() {
+            playSound('click');
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // --- GAME LOGIC ---
+
+        function handlePizzaAnswer(isTrue) {
+            const isCorrect = !isTrue;
+            showFeedback(isCorrect, isCorrect ? "BINGO! 這是幻覺" : "OH NO! 答錯囉", isCorrect ? "石虎是肉食動物，不能吃人造食物。" : "石虎吃了會生病喔！");
+            if (isCorrect) setTimeout(() => goToStage('vision'), 2000);
+        }
+
+        function renderVisionQuiz() {
+            const q = VISION_QUIZ[visionStep];
+            document.getElementById('vision-step-num').innerText = visionStep + 1;
+            document.getElementById('vision-title').innerText = q.title;
+            document.getElementById('vision-q').innerText = q.question;
+            document.getElementById('vision-q-en').innerText = q.questionEn;
+            
+            const container = document.getElementById('vision-options');
+            container.innerHTML = q.options.map(opt => `
+                <button onclick="handleVisionAnswer(${opt.correct}, '${q.explanation}')" class="group p-6 rounded-3xl border-b-[8px] border-black/10 active:border-b-0 active:translate-y-2 transition-all shadow-lg flex flex-col items-center gap-4 hover:scale-[1.02] ${opt.style}">
+                    <div class="w-24 h-24 rounded-full bg-white border-4 border-gray-100 shadow-inner flex items-center justify-center overflow-hidden relative">
+                         ${getVisual(visionStep, opt.id === 'yes')}
+                    </div>
+                    <span class="font-black text-lg ${opt.id === 'yes' && visionStep === 0 ? 'text-white' : 'text-gray-800'}">${opt.text}</span>
+                </button>
+            `).join('');
+        }
+
+        function getVisual(step, isYes) {
+            if (step === 0) { 
+                return isYes ? 
+                    `<div class="w-full h-full bg-black relative"><div class="absolute top-4 left-1/2 -translate-x-1/2 w-8 h-6 bg-white rounded-full blur-[1px]"></div></div>` : 
+                    `<div class="w-full h-full bg-amber-700 flex flex-col justify-center items-center"><div class="w-full h-2 bg-black/20 my-1 rotate-12"></div><div class="w-full h-2 bg-black/20 my-1 rotate-12"></div></div>`;
+            }
+            if (step === 1) { 
+                return isYes ? 
+                    `<div class="w-full h-full bg-amber-600 relative"><div class="absolute top-0 left-1/3 w-2 h-full bg-white/90 blur-[1px]"></div><div class="absolute top-0 right-1/3 w-2 h-full bg-white/90 blur-[1px]"></div></div>` :
+                    `<div class="w-full h-full bg-gray-400 flex justify-center pt-2"><span class="text-5xl font-black text-black/60">M</span></div>`;
+            }
+            if (step === 2) { 
+                return isYes ? 
+                    `<div class="w-full h-full bg-amber-400 relative radial-dots"></div>` :
+                    `<div class="w-full h-full bg-gray-500 flex flex-col justify-center gap-2"><div class="w-full h-3 bg-black/40 skew-x-12"></div><div class="w-full h-3 bg-black/40 -skew-x-12"></div></div>`;
+            }
+        }
+
+        function handleVisionAnswer(isCorrect, explanation) {
+            showFeedback(isCorrect, isCorrect ? "鑑定成功 (Verified)" : "鑑定錯誤 (Error)", explanation);
+            if (isCorrect) {
+                setTimeout(() => {
+                    if (visionStep < 2) {
+                        visionStep++;
+                        renderVisionQuiz();
+                    } else {
+                        goToStage('hallucination');
+                    }
+                }, 2000);
+            }
+        }
+
+        function renderHallucinationQuiz() {
+            const q = { q: "撿到石虎可以帶回家養。", qEn: "Keep it as a pet?", correct: false };
+            if (quizIndex === 1) Object.assign(q, { q: "石虎餓了，可以餵鮪魚罐頭。", qEn: "Feed it canned tuna?", correct: false });
+            if (quizIndex === 2) Object.assign(q, { q: "發現受傷石虎，應打給專家。", qEn: "Call experts if injured?", correct: true });
+
+            document.getElementById('hallucination-q').innerText = q.q;
+            document.getElementById('hallucination-q-en').innerText = q.qEn;
+        }
+
+        function handleHallucinationAnswer(userChoice) {
+            let correct;
+            if (quizIndex === 0) correct = !userChoice;
+            else if (quizIndex === 1) correct = !userChoice;
+            else correct = userChoice;
+
+            showFeedback(correct, correct ? "精準判斷！ Correct!" : "哦不！這是 AI 陷阱！", correct ? "Good job!" : "Be careful!");
+            if (correct) {
+                setTimeout(() => {
+                    if (quizIndex < 2) {
+                        quizIndex++;
+                        renderHallucinationQuiz();
+                    } else {
+                        goToStage('pledge');
+                    }
+                }, 2000);
+            }
+        }
+
+        function askAiForProof() {
+            playSound('click');
+            const text = document.getElementById('hallucination-q').innerText;
+            const res = getSimulatedResponse(text);
+            showAiModal(res);
+        }
+
+        function renderPledge() {
+            const container = document.getElementById('pledge-list');
+            container.innerHTML = OATH_STEPS.map((s, i) => `
+                <div class="p-5 rounded-3xl border-4 flex flex-col md:flex-row items-center justify-between transition-all shadow-md ${pledgeData[i].status === 'done' ? 'bg-green-50 border-green-500 scale-[1.02]' : 'bg-gray-50 border-gray-200'}">
+                    <div class="flex-1 pr-4 mb-4 md:mb-0 w-full">
+                        <p class="font-black text-lg text-gray-800 leading-tight">${s.textEn}<br/><span class="text-base text-gray-600">${s.textTw}</span></p>
+                        <p class="text-gray-400 font-bold text-xs mt-1">${s.sub}</p>
+                        ${pledgeData[i].transcript ? `<div class="mt-3 bg-blue-50 border-l-4 border-blue-400 p-2 rounded-r-lg"><p class="text-[10px] uppercase font-bold text-blue-400">AI Heard:</p><p class="text-sm font-bold text-blue-800 italic">"${pledgeData[i].transcript}"</p></div>` : ''}
+                    </div>
+                    <div class="flex gap-2 items-center self-end md:self-center">
+                        <button onclick="playSample('${s.textEn.replace(/'/g, "\\'")}')" class="p-3 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors" title="Listen"><i data-lucide="ear" class="w-5 h-5"></i></button>
+                        
+                        ${pledgeData[i].status === 'idle' ? 
+                            `<button onclick="startRecording(${i})" class="p-3 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all animate-pulse" title="Record"><i data-lucide="mic" class="w-5 h-5"></i></button>` : ''}
+                        
+                        ${pledgeData[i].status === 'recording' ? 
+                            `<button onclick="stopRecording(${i})" class="p-3 bg-red-100 text-red-600 rounded-full animate-pulse border-2 border-red-500 flex items-center gap-2"><div class="w-3 h-3 bg-red-600 rounded-sm"></div><span class="text-xs font-black">Stop</span></button>` : ''}
+
+                        ${pledgeData[i].status === 'review' ? 
+                            `<button onclick="playUserRecording(${i})" class="p-3 bg-yellow-400 text-white rounded-full shadow-lg hover:scale-110"><i data-lucide="play" class="w-5 h-5 fill-current"></i></button>
+                             <button onclick="resetRecording(${i})" class="p-3 bg-gray-200 text-gray-600 rounded-full shadow-lg hover:bg-gray-300"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+                             <button onclick="submitPledge(${i})" class="p-3 bg-green-500 text-white rounded-full shadow-lg hover:scale-110 animate-bounce"><i data-lucide="arrow-right" class="w-5 h-5"></i></button>` : ''}
+
+                        ${pledgeData[i].status === 'done' ? 
+                            `<div class="p-3 bg-green-100 text-green-600 rounded-full"><i data-lucide="check-circle" class="w-5 h-5"></i></div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+
+            const allDone = pledgeData.every(p => p.status === 'done');
+            const actionDiv = document.getElementById('pledge-action');
+            if (allDone) {
+                actionDiv.innerHTML = `<button onclick="goToStage('certificate')" class="bg-[#FF4757] text-white border-b-[8px] border-[#C41E3A] w-full py-6 text-2xl uppercase animate-bounce rounded-[30px] font-black transition-all hover:scale-105 active:translate-y-[6px] active:border-b-0"><div class="flex items-center justify-center gap-2"><i data-lucide="crown"></i> Claim Reward / 領取證書</div></button>`;
+                lucide.createIcons();
+            } else {
+                actionDiv.innerHTML = `<p class="text-gray-400 text-sm font-bold animate-pulse">Complete all oaths to proceed!</p>`;
+            }
+        }
+
+        function playSample(text) {
+            playSound('click');
+            speakText(text);
+        }
+
+        function startRecording(index) {
+            playSound('click');
+            activeRecordingIndex = index;
+            pledgeData[index].status = 'recording';
+            renderPledge();
+
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.onresult = (e) => { pledgeData[index].transcript = e.results[0][0].transcript; };
+                try { recognition.start(); } catch(e){}
+            }
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        pledgeData[index].blob = new Blob(audioChunks, { type: 'audio/wav' });
+                        if(!pledgeData[index].transcript) pledgeData[index].transcript = "(Audio Recorded)";
+                        pledgeData[index].status = 'review';
+                        renderPledge();
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    mediaRecorder.start();
+                }).catch(() => setTimeout(() => stopRecording(index, true), 2000));
+            } else {
+                setTimeout(() => stopRecording(index, true), 2000);
+            }
+        }
+
+        function stopRecording(index, isSim = false) {
+            playSound('click');
+            if (isSim) {
+                pledgeData[index].transcript = `(Simulation) ${OATH_STEPS[index].textEn}`;
+                pledgeData[index].status = 'review';
+                renderPledge();
+            } else {
+                if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+                if (recognition) recognition.stop();
+            }
+            activeRecordingIndex = null;
+        }
+
+        function resetRecording(index) {
+            playSound('click');
+            pledgeData[index] = { status: 'idle', blob: null, transcript: '' };
+            renderPledge();
+        }
+
+        function playUserRecording(index) {
+            playSound('click');
+            if (pledgeData[index].blob) {
+                const url = URL.createObjectURL(pledgeData[index].blob);
+                new Audio(url).play();
+            } else {
+                speakText(OATH_STEPS[index].textEn);
+            }
+        }
+
+        function submitPledge(index) {
+            playSound('correct');
+            pledgeData[index].status = 'done';
+            score = Math.min(100, score + 10);
+            speakText("Pledge accepted!");
+            updateHUD();
+            renderPledge();
+        }
+
+        async function renderCertificate() {
+            stopBGM(); // Stop music for victory
+            playSound('victory');
+
+            // Generate blessing
+            heroBlessing = await callGemini(`玩家 ${playerName} 完成宣誓。`);
+            
+            // Speak Sequence: English Congrats -> English Blessing -> Chinese Congrats
+            speakText("Congratulations! You are the best Leopard Cat Guardian!");
+            
+            setTimeout(() => {
+                speakText(heroBlessing); // Read English Blessing
+            }, 3500);
+
+            setTimeout(() => {
+                speakText("恭喜通關！你是最棒的石虎守護者！"); // Chinese Congrats
+            }, 9000);
+
+            const theme = getCertificateTheme(score);
+            const container = document.getElementById('certificate-container');
+            container.className = `p-10 rounded-[40px] shadow-2xl relative overflow-hidden border-[12px] transition-all ${theme.border} ${theme.bg}`;
+            
+            document.getElementById('cert-subtitle').className = `text-base font-black tracking-[0.3em] uppercase ${theme.subText}`;
+            document.getElementById('cert-title-en').innerText = theme.nameEn;
+            document.getElementById('cert-title').innerText = theme.name;
+            document.getElementById('cert-title').className = `text-4xl font-black ${theme.text} drop-shadow-sm`;
+            
+            document.getElementById('cert-avatar-container').className = `w-32 h-32 rounded-full border-[6px] ${theme.border} ${selectedCharacter.color} flex items-center justify-center overflow-hidden shadow-2xl mb-4 relative`;
+            document.getElementById('cert-avatar-container').innerHTML = `
+                <span class="text-6xl filter drop-shadow-md absolute">${selectedCharacter.emoji}</span>
+                <img src="${selectedCharacter.img}" class="w-full h-full object-contain relative z-10" onerror="this.style.display='none'">
+                <div class="absolute bottom-0 w-full text-center text-[10px] font-black text-white py-1 ${theme.accent} z-20">PLAYER</div>
+            `;
+            
+            document.getElementById('cert-name').innerText = playerName;
+            document.getElementById('cert-name').className = `text-3xl font-black ${theme.text} mb-1`;
+            
+            document.getElementById('cert-score').innerText = score;
+            document.getElementById('cert-score').className = `text-2xl font-black ${theme.text}`;
+            
+            document.getElementById('cert-blessing').innerText = `"${heroBlessing}"`;
+            document.getElementById('cert-date').innerText = new Date().toLocaleDateString();
+
+            renderBadges();
+            updateCertBadge();
+            
+            if(pledgeData.some(d => d.blob)) {
+                document.getElementById('dl-audio-btn').classList.remove('hidden');
+                document.getElementById('dl-audio-btn').classList.add('flex');
+            }
+        }
+        
+        function renderBadges() {
+            document.getElementById('badge-grid').innerHTML = BADGES.map(b => `
+                <button onclick="selectBadge('${b.id}')" class="aspect-square rounded-2xl flex items-center justify-center transition-all ${selectedBadge.id === b.id ? 'bg-white scale-110 shadow-xl ring-4 ring-white' : 'bg-white/30 hover:bg-white/60 hover:scale-105'}">
+                    <div class="${b.color.split(' ')[1]}"><i data-lucide="${b.icon}" class="w-8 h-8"></i></div>
+                </button>
+            `).join('');
+            lucide.createIcons();
+        }
+        
+        function selectBadge(id) {
+            playSound('click');
+            selectedBadge = BADGES.find(b => b.id === id);
+            renderBadges();
+            updateCertBadge();
+        }
+        
+        function updateCertBadge() {
+             document.getElementById('cert-badge-display').innerHTML = `
+                <div class="w-24 h-24 rounded-full border-[4px] border-white shadow-xl ${selectedBadge.color.split(' ')[0]} flex items-center justify-center transform rotate-[-10deg]">
+                    <div class="text-white scale-125 drop-shadow-md"><i data-lucide="${selectedBadge.icon}" class="w-10 h-10"></i></div>
+                </div>
+                <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] px-3 py-1 rounded-full font-bold whitespace-nowrap shadow-md">${selectedBadge.name}</div>
+             `;
+             lucide.createIcons();
+        }
+
+        // --- SHARED UTILS ---
+        function showFeedback(isCorrect, title, body) {
+            if (isCorrect) playSound('correct'); else playSound('wrong');
+            
+            // Voice Feedback
+            const correctPhrases = ["Excellent!", "Great job!", "Correct!", "Fantastic!"];
+            const wrongPhrases = ["Oops, try again!", "Not quite.", "Check the hint!"];
+            speakText(isCorrect ? correctPhrases[Math.floor(Math.random()*correctPhrases.length)] : wrongPhrases[Math.floor(Math.random()*wrongPhrases.length)]);
+
+            if (!isCorrect) {
+                lives = Math.max(0, lives - 1);
+                score = Math.max(0, score - 5);
+            } else {
+                score = Math.min(100, score + 10);
+            }
+            updateHUD();
+
+            document.getElementById('fb-icon').innerHTML = isCorrect ? `<i data-lucide="check-circle" class="text-green-500 w-10 h-10"></i>` : `<i data-lucide="x-circle" class="text-red-500 w-10 h-10"></i>`;
+            document.getElementById('fb-title').innerText = title;
+            document.getElementById('fb-title').className = `font-black text-2xl ${isCorrect ? 'text-green-600' : 'text-red-600'}`;
+            document.getElementById('fb-body').innerText = body;
+            
+            document.getElementById('feedback-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeFeedback() {
+            playSound('click');
+            document.getElementById('feedback-modal').classList.add('hidden');
+        }
+
+        function showAiModal(text) {
+            document.getElementById('ai-content').innerHTML = `<div class="prose prose-lg font-bold text-gray-700 whitespace-pre-wrap leading-relaxed text-left">${text}</div>`;
+            document.getElementById('ai-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+        
+        function closeAiModal() {
+            playSound('click');
+            document.getElementById('ai-modal').classList.add('hidden');
+        }
+
+        function giveRandomTip() {
+            playSound('click');
+            const tip = GUILD_MASTER_TIPS[Math.floor(Math.random() * GUILD_MASTER_TIPS.length)];
+            showAiModal(`💡 **公會長小知識**：\n\n${tip}`);
+        }
+
+        function downloadCertificate() {
+            playSound('click');
+            const el = document.getElementById('certificate-container');
+            html2canvas(el, { scale: 2, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `石虎證書_${playerName}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        function downloadRecordings() {
+            playSound('click');
+            if (!window.JSZip) return alert("JSZip not loaded");
+            const zip = new JSZip();
+            let count = 0;
+            pledgeData.forEach((d, i) => {
+                if (d.blob) {
+                    zip.file(`pledge_${i+1}.wav`, d.blob);
+                    count++;
+                }
+            });
+            if (count === 0) return alert("No recordings found!");
+            zip.generateAsync({type:"blob"}).then(content => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `Recordings_${playerName}.zip`;
+                link.click();
+            });
+        }
+        
+        function resetGame() {
+            playSound('click');
+            location.reload();
+        }
+
+        function getCertificateTheme(score) {
+            if (score >= 100) return { name: '金色傳說', nameEn: 'Legendary Gold', bg: 'bg-gradient-to-br from-yellow-300 via-yellow-100 to-yellow-500', border: 'border-yellow-600', text: 'text-yellow-900', subText: 'text-yellow-700', accent: 'bg-yellow-500', iconColor: 'text-yellow-600' };
+            if (score >= 90) return { name: '藍色菁英', nameEn: 'Elite Blue', bg: 'bg-gradient-to-br from-blue-300 via-cyan-100 to-blue-500', border: 'border-blue-600', text: 'text-blue-900', subText: 'text-blue-700', accent: 'bg-blue-500', iconColor: 'text-blue-600' };
+            if (score >= 80) return { name: '綠色守護', nameEn: 'Guardian Green', bg: 'bg-gradient-to-br from-green-300 via-emerald-100 to-green-500', border: 'border-green-600', text: 'text-green-900', subText: 'text-green-700', accent: 'bg-green-500', iconColor: 'text-green-600' };
+            if (score >= 70) return { name: '棕色拓荒', nameEn: 'Pioneer Brown', bg: 'bg-gradient-to-br from-amber-200 via-orange-100 to-amber-500', border: 'border-amber-700', text: 'text-amber-900', subText: 'text-amber-800', accent: 'bg-amber-600', iconColor: 'text-amber-700' };
+            return { name: '橘色見習', nameEn: 'Novice Orange', bg: 'bg-gradient-to-br from-orange-300 via-red-100 to-orange-500', border: 'border-orange-600', text: 'text-orange-900', subText: 'text-orange-800', accent: 'bg-orange-500', iconColor: 'text-orange-600' };
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            renderCharacterSelect();
+            lucide.createIcons();
+        };
+
+    </script>
+</body>
+</html>
